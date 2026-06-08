@@ -1,0 +1,185 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title mb-0">Gestión de Citas</h1>
+    <a href="{% url 'appointment_create' %}" class="btn btn-success"><i class="bi bi-plus-lg me-1"></i> Nueva Cita</a>
+</div>
+
+<!-- Filtros -->
+<div class="card p-3 mb-3">
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+        <span class="text-muted small fw-semibold me-1">Filtrar:</span>
+        <button class="btn btn-sm btn-dark active" onclick="filtrar('todos', this)">
+            <i class="bi bi-list me-1"></i>Todos
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="filtrar('Pendiente', this)">
+            <i class="bi bi-clock me-1"></i>Pendiente
+        </button>
+        <button class="btn btn-sm btn-outline-info" onclick="filtrar('En proceso', this)">
+            <i class="bi bi-arrow-repeat me-1"></i>En proceso
+        </button>
+        <button class="btn btn-sm btn-outline-danger" onclick="filtrar('Cancelada', this)">
+            <i class="bi bi-x-circle me-1"></i>Cancelada
+        </button>
+        <div class="ms-auto">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" id="buscador" class="form-control border-start-0"
+                       placeholder="Buscar por cliente, vehículo o razón..."
+                       oninput="buscar(this.value)">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla -->
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0" id="tablaCitas">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Tipo</th>
+                    <th>Fecha</th>
+                    <th>Razón</th>
+                    <th>Cliente</th>
+                    <th>Vehículo</th>
+                    <th>Mecánico</th>
+                    <th>Estado</th>
+                    <th>Orden</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for a in appointments %}
+            <tr class="fila-cita" data-estado="{{ a.status }}"
+                data-texto="{{ a.customer.first_name|lower }} {{ a.customer.last_name|lower }} {{ a.vehicle.brand|lower }} {{ a.vehicle.plate|lower }} {{ a.reason|lower }}">
+                <td><span class="badge bg-light text-dark fw-normal">{{ a.id }}</span></td>
+                <td>
+                    {% if a.tipo == 'Llegada directa' %}
+                        <span class="badge bg-warning text-dark"><i class="bi bi-lightning-fill me-1"></i>Llegada directa</span>
+                    {% else %}
+                        <span class="badge bg-primary"><i class="bi bi-calendar-check me-1"></i>Cita previa</span>
+                    {% endif %}
+                </td>
+                <td class="text-nowrap">{{ a.appointment_date|date:'d/m/Y H:i' }}</td>
+                <td style="max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="{{ a.reason }}">{{ a.reason }}</td>
+                <td>{{ a.customer.first_name }} {{ a.customer.last_name }}</td>
+                <td><span class="badge bg-primary-subtle text-primary fw-semibold">{{ a.vehicle.plate }}</span> {{ a.vehicle.brand }}</td>
+                <td>
+                    {% if a.mechanic %}
+                        <i class="bi bi-person-gear me-1 text-success"></i>{{ a.mechanic.first_name }} {{ a.mechanic.last_name }}
+                    {% else %}
+                        <span class="text-muted small">Sin asignar</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if a.status == 'Pendiente' %}
+                        <span class="badge bg-secondary"><i class="bi bi-clock me-1"></i>Pendiente</span>
+                    {% elif a.status == 'En proceso' %}
+                        <span class="badge bg-info text-dark"><i class="bi bi-arrow-repeat me-1"></i>En proceso</span>
+                    {% elif a.status == 'Finalizada' %}
+                        <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Finalizada</span>
+                    {% elif a.status == 'Cancelada' %}
+                        <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Cancelada</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if a.workorder %}
+                    <a href="{% url 'workorder_edit' a.workorder.id %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-clipboard2-check me-1"></i>#{{ a.workorder.id }}
+                    </a>
+                    {% else %}
+                    <span class="text-muted small">—</span>
+                    {% endif %}
+                </td>
+                <td class="text-nowrap">
+                    {% if a.status == 'Pendiente' %}
+                    <button class="btn btn-sm btn-outline-warning me-1" 
+                            onclick="confirmarCancelar({{ a.id }})" title="Cancelar cita">
+                        <i class="bi bi-x-circle"></i>
+                    </button>
+                    {% endif %}
+                    <a href="{% url 'appointment_edit' a.id %}" class="btn btn-sm btn-outline-success me-1"><i class="bi bi-pencil"></i></a>
+                    {% if is_admin %}
+                    <a href="{% url 'appointment_delete' a.id %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <div id="sinResultados" class="text-center py-5 text-muted" style="display:none;">
+            <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
+            No se encontraron citas con ese criterio.
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-primary-subtle { background-color:#dbeafe; }
+</style>
+
+<script>
+let filtroActual = 'todos';
+
+function filtrar(valor, btn) {
+    filtroActual = valor;
+    document.querySelectorAll('.card .btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    aplicarFiltros();
+}
+
+function buscar(q) {
+    aplicarFiltros(q.toLowerCase().trim());
+}
+
+function aplicarFiltros(q = document.getElementById('buscador').value.toLowerCase().trim()) {
+    const filas = document.querySelectorAll('.fila-cita');
+    let visibles = 0;
+    filas.forEach(row => {
+        const estadoOk = filtroActual === 'todos' || row.dataset.estado === filtroActual;
+        const textoOk = q === '' || row.dataset.texto.includes(q);
+        row.style.display = estadoOk && textoOk ? '' : 'none';
+        if (estadoOk && textoOk) visibles++;
+    });
+    document.getElementById('sinResultados').style.display = visibles === 0 ? 'block' : 'none';
+}
+</script>
+
+<!-- Modal cancelar cita -->
+<div class="modal fade" id="modalCancelar" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width:40px;height:40px;background:#fff3cd;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                        <i class="bi bi-exclamation-triangle text-warning fs-5"></i>
+                    </div>
+                    <h5 class="modal-title fw-bold mb-0">Cancelar Cita</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-2">
+                <p class="text-muted mb-0">¿Estás seguro que deseas cancelar esta cita? Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">No, mantener</button>
+                <form id="formCancelar" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-warning px-4 fw-semibold">
+                        <i class="bi bi-x-circle me-1"></i>Sí, cancelar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmarCancelar(id) {
+    document.getElementById('formCancelar').action = `/appointments/${id}/cancel/`;
+    new bootstrap.Modal(document.getElementById('modalCancelar')).show();
+}
+</script>
+{% endblock %}

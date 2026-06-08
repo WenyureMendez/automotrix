@@ -1,0 +1,122 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title mb-0">Órdenes de Trabajo</h1>
+    <a href="{% url 'workorder_create' %}" class="btn btn-success"><i class="bi bi-plus-lg me-1"></i> Nueva Orden</a>
+</div>
+
+<!-- BUSCADOR -->
+<div class="card p-3 mb-3">
+    <div class="input-group">
+        <span class="input-group-text"><i class="bi bi-search"></i></span>
+        <input type="text" id="buscadorOrdenes" class="form-control"
+               placeholder="Buscar por placa o nombre del cliente...">
+        <button class="btn btn-outline-secondary" type="button" onclick="limpiarBusqueda()">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+</div>
+
+<!-- FILTROS POR ESTADO -->
+<div class="d-flex gap-2 mb-3">
+    <a href="{% url 'workorders_list' %}" class="btn btn-sm {% if not request.GET.status %}btn-dark{% else %}btn-outline-dark{% endif %}">Todas</a>
+    <a href="?status=Activa" class="btn btn-sm {% if request.GET.status == 'Activa' %}btn-primary{% else %}btn-outline-primary{% endif %}">Activa</a>
+    <a href="?status=Diagnóstico" class="btn btn-sm {% if request.GET.status == 'Diagnóstico' %}btn-info{% else %}btn-outline-info{% endif %}">Diagnóstico</a>
+    <a href="?status=Reparación" class="btn btn-sm {% if request.GET.status == 'Reparación' %}btn-warning{% else %}btn-outline-warning{% endif %}">Reparación</a>
+    <a href="?status=Finalizada" class="btn btn-sm {% if request.GET.status == 'Finalizada' %}btn-success{% else %}btn-outline-success{% endif %}">Finalizada</a>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0" id="tablaOrdenes">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Vehículo</th>
+                    <th>Cliente</th>
+                    <th>Mecánico</th>
+                    <th>Inicio</th>
+                    <th>Fin</th>
+                    <th>Estado</th>
+                    {% if is_admin or is_mecanico or is_recepcionista %}<th>Cambiar Estado</th>{% endif %}
+                    {% if is_admin or is_mecanico or is_recepcionista %}<th>Acciones</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+            {% for w in workorders %}
+            <tr class="fila-orden"
+                data-placa="{{ w.vehicle.plate|lower }}"
+                data-cliente="{{ w.vehicle.customer.first_name|lower }} {{ w.vehicle.customer.last_name|lower }}">
+                <td>{{ w.id }}</td>
+                <td>{{ w.vehicle.brand }} - {{ w.vehicle.plate }}</td>
+                <td>{{ w.vehicle.customer.first_name }} {{ w.vehicle.customer.last_name }}</td>
+                <td>{{ w.mechanic.first_name }} {{ w.mechanic.last_name }}</td>
+                <td>{{ w.start_date|date:'d/m/Y' }}</td>
+                <td>{{ w.end_date|date:'d/m/Y'|default:'-' }}</td>
+                <td>
+                    {% if w.status == 'Finalizada' %}
+                        <span class="badge bg-success">{{ w.status }}</span>
+                    {% elif w.status == 'Reparación' %}
+                        <span class="badge bg-warning text-dark">{{ w.status }}</span>
+                    {% elif w.status == 'Diagnóstico' %}
+                        <span class="badge bg-info text-dark">{{ w.status }}</span>
+                    {% else %}
+                        <span class="badge bg-primary">{{ w.status }}</span>
+                    {% endif %}
+                </td>
+                {% if is_admin or is_mecanico or is_recepcionista %}
+                <td>
+                    <form method="post" action="{% url 'workorder_status' w.id %}" class="d-flex gap-1 align-items-center">
+                        {% csrf_token %}
+                        <select name="status" class="form-select form-select-sm" style="width:140px;">
+                            <option value="Activa" {% if w.status == 'Activa' %}selected{% endif %}>Activa</option>
+                            <option value="Diagnóstico" {% if w.status == 'Diagnóstico' %}selected{% endif %}>Diagnóstico</option>
+                            <option value="Reparación" {% if w.status == 'Reparación' %}selected{% endif %}>Reparación</option>
+                            <option value="Finalizada" {% if w.status == 'Finalizada' %}selected{% endif %}>Finalizada</option>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-success"><i class="bi bi-check-lg"></i></button>
+                    </form>
+                </td>
+                <td>
+                    <a href="{% url 'workorder_edit' w.id %}" class="btn btn-sm btn-outline-success me-1"><i class="bi bi-pencil"></i></a>
+                    <a href="{% url 'workorder_delete' w.id %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <div id="sinResultados" class="text-center text-muted py-4" style="display:none;">
+            <i class="bi bi-search fs-3 d-block mb-2"></i>
+            No se encontraron órdenes con ese criterio.
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('buscadorOrdenes').addEventListener('input', function () {
+    const query = this.value.toLowerCase().trim();
+    const filas = document.querySelectorAll('.fila-orden');
+    let visibles = 0;
+
+    filas.forEach(fila => {
+        const placa = fila.dataset.placa;
+        const cliente = fila.dataset.cliente;
+        if (placa.includes(query) || cliente.includes(query)) {
+            fila.style.display = '';
+            visibles++;
+        } else {
+            fila.style.display = 'none';
+        }
+    });
+
+    document.getElementById('sinResultados').style.display = visibles === 0 ? 'block' : 'none';
+});
+
+function limpiarBusqueda() {
+    document.getElementById('buscadorOrdenes').value = '';
+    document.querySelectorAll('.fila-orden').forEach(f => f.style.display = '');
+    document.getElementById('sinResultados').style.display = 'none';
+}
+</script>
+{% endblock %}

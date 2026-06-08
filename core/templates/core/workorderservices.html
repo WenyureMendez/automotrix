@@ -1,0 +1,27 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title mb-0">Servicios de Órdenes</h1>
+    <a href="{% url 'workorderservice_create' %}" class="btn btn-success"><i class="bi bi-plus-lg me-1"></i> Agregar Servicio</a>
+</div>
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light"><tr><th>ID</th><th>Orden</th><th>Servicio</th><th>Precio</th><th>Acciones</th></tr></thead>
+            <tbody>
+            {% for i in items %}
+            <tr>
+                <td>{{ i.id }}</td>
+                <td>Orden #{{ i.workorder.id }} - {{ i.workorder.vehicle.brand }}</td>
+                <td>{{ i.service.name }}</td>
+                <td>${{ i.service.price|floatformat:2 }}</td>
+                <td>
+                    <a href="{% url 'workorderservice_delete' i.id %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

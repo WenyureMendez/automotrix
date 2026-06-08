@@ -1,0 +1,379 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card p-4">
+            <h4 class="fw-bold mb-4">{{ action }} Cita</h4>
+            <form method="post">
+                {% csrf_token %}
+                <div class="row g-3">
+
+                    <!-- BÚSQUEDA POR PLACA -->
+                    <div class="col-12">
+                        <div class="card border-success p-3 mb-2">
+                            <h6 class="fw-bold text-success mb-2">
+                                <i class="bi bi-search me-1"></i> Buscar cliente por placa
+                            </h6>
+                            <div class="position-relative">
+                                <input type="text" id="buscarPlaca" class="form-control"
+                                       placeholder="Ej: ABC123 o AB1234"
+                                       maxlength="6" autocomplete="off"
+                                       style="text-transform:uppercase">
+                                <div id="resultadoPlaca" class="list-group position-absolute w-100 shadow"
+                                     style="z-index:999; display:none;"></div>
+                            </div>
+                            <div id="clienteEncontrado" class="alert alert-success mt-2 py-2 mb-0" style="display:none; font-size:0.85rem;">
+                                <i class="bi bi-check-circle me-1"></i>
+                                <span id="clienteNombre"></span> — campos completados automáticamente.
+                            </div>
+                            <div id="clienteNoEncontrado" class="alert alert-warning mt-2 py-2 mb-0" style="display:none; font-size:0.85rem;">
+                                <i class="bi bi-exclamation-circle me-1"></i>
+                                Placa no encontrada. Completa los datos manualmente.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <h6 class="fw-bold text-muted border-bottom pb-2">
+                            <i class="bi bi-person me-1"></i> Datos del Cliente
+                        </h6>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Nombre *</label>
+                        <input type="text" name="first_name" id="first_name" class="form-control"
+                            value="{{ obj.customer.first_name|default:'' }}" required>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Apellido *</label>
+                        <input type="text" name="last_name" id="last_name" class="form-control"
+                            value="{{ obj.customer.last_name|default:'' }}" required>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Teléfono *</label>
+                        <input type="text" name="phone" id="phone" class="form-control"
+                            value="{{ obj.customer.phone|default:'' }}" required>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Email *</label>
+                        <input type="email" name="email" id="email" class="form-control"
+                            value="{{ obj.customer.email|default:'' }}" required>
+                    </div>
+
+                    <div class="col-12 mt-2">
+                        <h6 class="fw-bold text-muted border-bottom pb-2">
+                            <i class="bi bi-car-front me-1"></i> Datos del Vehículo
+                        </h6>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Marca *</label>
+                        <input type="text" name="brand" id="brand" class="form-control"
+                            value="{{ obj.vehicle.brand|default:'' }}" required>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Modelo *</label>
+                        <input type="text" name="model" id="model" class="form-control"
+                            value="{{ obj.vehicle.model|default:'' }}" required>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Placa *</label>
+                        <input type="text" name="plate" id="plate" class="form-control"
+                            value="{{ obj.vehicle.plate|default:'' }}" required
+                            style="text-transform:uppercase">
+                    </div>
+
+                    <div class="col-12 mt-2">
+                        <h6 class="fw-bold text-muted border-bottom pb-2">
+                            <i class="bi bi-calendar3 me-1"></i> Datos de la Cita
+                        </h6>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Tipo de Cita *</label>
+                        <select name="tipo" id="tipoCita" class="form-select" required>
+                            <option value="Cita previa" {% if obj.tipo == 'Cita previa' %}selected{% endif %}>Cita previa</option>
+                            <option value="Llegada directa" {% if obj.tipo == 'Llegada directa' %}selected{% endif %}>Llegada directa</option>
+                        </select>
+                    </div>
+
+                    <!-- Fecha: solo visible si es Cita previa -->
+                    <div class="col-md-6" id="fechaBox">
+                        <label class="form-label">Fecha *</label>
+                        <input type="datetime-local" name="appointment_date" id="appointment_date"
+                               class="form-control"
+                               value="{{ obj.appointment_date|date:'Y-m-d\\TH:i'|default:'' }}">
+                    </div>
+
+                    <!-- Fecha visible no editable para llegada directa -->
+                    <div class="col-md-6" id="fechaHoyBox" style="display:none;">
+                        <label class="form-label">Fecha</label>
+                        <input type="text" class="form-control bg-light" id="fechaHoyTexto" readonly>
+                    </div>
+
+                    <!-- Campo oculto que envía la fecha actual para llegada directa -->
+                    <input type="hidden" id="appointment_date_hidden" name="appointment_date_hidden" value="">
+
+                    <!-- Método de pago: solo para Llegada directa -->
+                    <div class="col-12" id="metodoPagoBox" style="display:none;">
+                        <div class="card border-success p-3">
+                            <h6 class="fw-bold text-success mb-3">
+                                <i class="bi bi-cash-coin me-1"></i> Método de Pago
+                            </h6>
+                            <p class="text-muted small mb-2">El cliente paga al dejar el vehículo.</p>
+                            <div class="d-flex gap-3">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="payment_method"
+                                           id="pagoEfectivo" value="Efectivo" checked>
+                                    <label class="form-check-label fw-semibold" for="pagoEfectivo">
+                                        <i class="bi bi-cash me-1"></i> Efectivo
+                                    </label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="payment_method"
+                                           id="pagoTransferencia" value="Transferencia">
+                                    <label class="form-check-label fw-semibold" for="pagoTransferencia">
+                                        <i class="bi bi-bank me-1"></i> Transferencia
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% load cop_filters %}
+
+                    <div class="col-12">
+                        <label class="form-label">Problema del vehículo *</label>
+                        <div class="position-relative">
+                            <input type="text" id="problemInput" name="reason" class="form-control"
+                                   placeholder="Ej: Cambio de aceite, ruido al frenar..."
+                                   value="{{ obj.reason|default:'' }}"
+                                   autocomplete="off" required>
+                            <div id="sugerencias" class="list-group position-absolute w-100 shadow"
+                                 style="z-index:999; display:none; max-height:220px; overflow-y:auto;"></div>
+                        </div>
+                        <div class="form-text">
+                            <i class="bi bi-lightbulb me-1"></i>Describe el problema y aparecerán sugerencias de servicios.
+                        </div>
+                        <div id="serviciosSeleccionados" class="mt-2 d-flex flex-wrap gap-2"></div>
+                        <input type="hidden" id="serviciosHidden" name="services" value="">
+                    </div>
+
+                    <div class="col-12" id="totalBox" style="display:none;">
+                        <div class="alert alert-success py-2 mb-0">
+                            <i class="bi bi-calculator me-1"></i>
+                            <strong>Total estimado:</strong>
+                            <span id="totalEstimado">$ 0</span>
+                            <span class="text-muted small ms-2">— Trabajos adicionales se cobran al entregar.</span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="alert alert-info mt-3 mb-0 py-2" style="font-size:0.85rem;">
+                    <i class="bi bi-info-circle me-1"></i>
+                    El mecánico se asignará automáticamente según disponibilidad.
+                </div>
+
+                <div class="d-flex gap-2 mt-4">
+                    <a href="{% url 'appointments_list' %}" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-floppy me-1"></i> Guardar Cita
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+const servicios = [
+  {% for s in services %}
+  { id: {{ s.id }}, nombre: "{{ s.name }}", precioNum: {{ s.price }}, precio: "{{ s.price|cop }}" },
+  {% endfor %}
+];
+
+let seleccionados = [];
+
+// ── Fecha de hoy legible y en formato datetime-local ──
+const ahora = new Date();
+const opciones = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+document.getElementById('fechaHoyTexto').value = ahora.toLocaleDateString('es-CO', opciones);
+
+// Formato para enviar al servidor: YYYY-MM-DDTHH:MM
+function fechaAhora() {
+    const pad = n => String(n).padStart(2, '0');
+    return `${ahora.getFullYear()}-${pad(ahora.getMonth()+1)}-${pad(ahora.getDate())}T${pad(ahora.getHours())}:${pad(ahora.getMinutes())}`;
+}
+
+// ── Tipo de cita: mostrar/ocultar fecha y método de pago ──
+function actualizarTipo() {
+    const tipo = document.getElementById('tipoCita').value;
+    const esDirecta = tipo === 'Llegada directa';
+
+    document.getElementById('fechaBox').style.display = esDirecta ? 'none' : 'block';
+    document.getElementById('fechaHoyBox').style.display = esDirecta ? 'block' : 'none';
+    document.getElementById('metodoPagoBox').style.display = esDirecta ? 'block' : 'none';
+
+    const campofecha = document.getElementById('appointment_date');
+    if (esDirecta) {
+        // Para llegada directa ponemos la fecha actual en el campo y lo dejamos sin required
+        campofecha.value = fechaAhora();
+        campofecha.required = false;
+    } else {
+        campofecha.value = campofecha.dataset.original || '';
+        campofecha.required = true;
+    }
+}
+
+document.getElementById('tipoCita').addEventListener('change', actualizarTipo);
+
+// Guardar valor original si viene al editar
+const campoFecha = document.getElementById('appointment_date');
+campoFecha.dataset.original = campoFecha.value;
+
+actualizarTipo(); // ejecutar al cargar
+
+// ── Búsqueda en tiempo real por placa ──
+let buscarTimeout = null;
+document.getElementById('buscarPlaca').addEventListener('input', function () {
+    const placa = this.value.trim().toUpperCase();
+    clearTimeout(buscarTimeout);
+
+    document.getElementById('clienteEncontrado').style.display = 'none';
+    document.getElementById('clienteNoEncontrado').style.display = 'none';
+    document.getElementById('resultadoPlaca').innerHTML = '';
+    document.getElementById('resultadoPlaca').style.display = 'none';
+
+    if (placa.length < 2) return;
+
+    buscarTimeout = setTimeout(() => {
+        fetch(`/api/buscar-placa/?placa=${placa}`)
+            .then(r => r.json())
+            .then(data => {
+                const caja = document.getElementById('resultadoPlaca');
+                caja.innerHTML = '';
+
+                if (data.found && data.resultados.length > 0) {
+                    data.resultados.forEach(d => {
+                        const item = document.createElement('button');
+                        item.type = 'button';
+                        item.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+                        item.innerHTML = `
+                            <span><i class="bi bi-car-front me-2 text-success"></i>
+                            <strong>${d.plate}</strong> — ${d.first_name} ${d.last_name}</span>
+                            <span class="text-muted small">${d.brand} ${d.model}</span>`;
+                        item.onclick = () => seleccionarCliente(d);
+                        caja.appendChild(item);
+                    });
+                    caja.style.display = 'block';
+                } else if (placa.length >= 6) {
+                    document.getElementById('clienteNoEncontrado').style.display = 'block';
+                }
+            });
+    }, 400);
+});
+
+function seleccionarCliente(data) {
+    document.getElementById('first_name').value = data.first_name;
+    document.getElementById('last_name').value = data.last_name;
+    document.getElementById('phone').value = data.phone;
+    document.getElementById('email').value = data.email;
+    document.getElementById('brand').value = data.brand;
+    document.getElementById('model').value = data.model;
+    document.getElementById('plate').value = data.plate;
+
+    document.getElementById('clienteNombre').textContent = data.first_name + ' ' + data.last_name;
+    document.getElementById('clienteEncontrado').style.display = 'block';
+    document.getElementById('clienteNoEncontrado').style.display = 'none';
+    document.getElementById('resultadoPlaca').style.display = 'none';
+    document.getElementById('buscarPlaca').value = data.plate;
+}
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#buscarPlaca') && !e.target.closest('#resultadoPlaca')) {
+        document.getElementById('resultadoPlaca').style.display = 'none';
+    }
+});
+
+// ── Sugerencias de servicios ──
+document.getElementById('problemInput').addEventListener('input', function () {
+    const query = this.value.toLowerCase().trim();
+    const caja = document.getElementById('sugerencias');
+    caja.innerHTML = '';
+    if (query.length < 2) { caja.style.display = 'none'; return; }
+
+    const coincidencias = servicios.filter(s =>
+        s.nombre.toLowerCase().includes(query) &&
+        !seleccionados.find(x => x.id === s.id)
+    );
+    if (coincidencias.length === 0) { caja.style.display = 'none'; return; }
+
+    coincidencias.forEach(s => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+        item.innerHTML = `<span><i class="bi bi-tools me-2 text-success"></i>${s.nombre}</span>
+                          <span class="badge bg-success">${s.precio}</span>`;
+        item.onclick = () => agregarServicio(s);
+        caja.appendChild(item);
+    });
+    caja.style.display = 'block';
+});
+
+function agregarServicio(s) {
+    seleccionados.push(s);
+    actualizarHidden();
+    renderTags();
+    actualizarTotal();
+    document.getElementById('sugerencias').style.display = 'none';
+}
+
+function quitarServicio(id) {
+    seleccionados = seleccionados.filter(s => s.id !== id);
+    actualizarHidden();
+    renderTags();
+    actualizarTotal();
+}
+
+function actualizarHidden() {
+    document.getElementById('serviciosHidden').value = seleccionados.map(s => s.id).join(',');
+}
+
+function actualizarTotal() {
+    const total = seleccionados.reduce((sum, s) => sum + parseFloat(s.precioNum), 0);
+    const totalBox = document.getElementById('totalBox');
+    if (seleccionados.length > 0) {
+        totalBox.style.display = 'block';
+        document.getElementById('totalEstimado').textContent = '$ ' + total.toLocaleString('es-CO');
+    } else {
+        totalBox.style.display = 'none';
+    }
+}
+
+function renderTags() {
+    const contenedor = document.getElementById('serviciosSeleccionados');
+    contenedor.innerHTML = '';
+    seleccionados.forEach(s => {
+        const tag = document.createElement('span');
+        tag.className = 'badge bg-success d-flex align-items-center gap-1 px-3 py-2';
+        tag.style.fontSize = '0.85rem';
+        tag.innerHTML = `${s.nombre} <span class="text-white-50 small">${s.precio}</span>
+                         <i class="bi bi-x-circle ms-1" style="cursor:pointer"
+                            onclick="quitarServicio(${s.id})"></i>`;
+        contenedor.appendChild(tag);
+    });
+}
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#problemInput') && !e.target.closest('#sugerencias')) {
+        document.getElementById('sugerencias').style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title mb-0">Gestión de Seguros</h1>
+    <a href="{% url 'insurance_create' %}" class="btn btn-success"><i class="bi bi-plus-lg me-1"></i> Nuevo Seguro</a>
+</div>
+<div class="card mb-3 p-3">
+    <div class="input-group">
+        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+        <input type="text" id="buscador" class="form-control border-start-0 ps-0" placeholder="Buscar por compañía, póliza o vehículo..." oninput="filtrar()">
+    </div>
+</div>
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr><th>ID</th><th>Compañía</th><th>Póliza</th><th>Inicio</th><th>Fin</th><th>Vehículo</th><th>Estado</th><th>Acciones</th></tr>
+            </thead>
+            <tbody>
+            {% for i in insurances %}
+            <tr class="fila"
+                data-compania="{{ i.company_name|lower }}"
+                data-poliza="{{ i.policy_number|lower }}"
+                data-vehiculo="{{ i.vehicle.brand|lower }} {{ i.vehicle.plate|lower }}">
+                <td><span class="badge bg-light text-dark fw-normal">{{ i.id }}</span></td>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="avatar-shield"><i class="bi bi-shield-check"></i></div>
+                        <div class="fw-semibold">{{ i.company_name }}</div>
+                    </div>
+                </td>
+                <td><span class="badge bg-primary-subtle text-primary fw-semibold">{{ i.policy_number }}</span></td>
+                <td>{{ i.start_date|date:"d/m/Y" }}</td>
+                <td>{{ i.end_date|date:"d/m/Y" }}</td>
+                <td>{{ i.vehicle.brand }} - {{ i.vehicle.plate }}</td>
+                <td>
+                    {% if i.end_date >= today %}
+                    <span class="badge bg-success">Vigente</span>
+                    {% else %}
+                    <span class="badge bg-danger">Vencida</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'insurance_edit' i.id %}" class="btn btn-sm btn-outline-success me-1"><i class="bi bi-pencil"></i></a>
+                    <a href="{% url 'insurance_delete' i.id %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <div id="sinResultados" class="text-center py-5 text-muted" style="display:none;">
+            <i class="bi bi-search fs-1 d-block mb-2"></i>
+            No se encontraron seguros con ese criterio.
+        </div>
+    </div>
+</div>
+<style>
+.avatar-shield { width:34px; height:34px; border-radius:50%; background-color:#8b5cf6; color:white; display:flex; align-items:center; justify-content:center; font-size:0.9rem; flex-shrink:0; }
+.bg-primary-subtle { background-color:#dbeafe; }
+</style>
+<script>
+function filtrar() {
+    const q = document.getElementById("buscador").value.toLowerCase().trim();
+    const filas = document.querySelectorAll(".fila");
+    let visibles = 0;
+    filas.forEach(fila => {
+        const coincide = fila.dataset.compania.includes(q) || fila.dataset.poliza.includes(q) || fila.dataset.vehiculo.includes(q);
+        fila.style.display = coincide ? "" : "none";
+        if (coincide) visibles++;
+    });
+    document.getElementById("sinResultados").style.display = visibles === 0 ? "block" : "none";
+}
+</script>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends 'core/base.html' %}
+{% load cop_filters %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title mb-0">Gestión de Pagos</h1>
+    <a href="{% url 'payment_create' %}" class="btn btn-success">
+        <i class="bi bi-plus-lg me-1"></i> Nuevo Pago
+    </a>
+</div>
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Factura</th>
+                    <th>Monto</th>
+                    <th>Fecha</th>
+                    <th>Método</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for p in payments %}
+            <tr>
+                <td>#{{ p.id }}</td>
+                <td>Factura #{{ p.invoice.id }}</td>
+                <td>{{ p.amount|cop }}</td>
+                <td>{{ p.payment_date|date:'d/m/Y' }}</td>
+                <td>
+                    {% if p.method == 'Efectivo' %}
+                        <span class="badge bg-success"><i class="bi bi-cash me-1"></i>Efectivo</span>
+                    {% elif p.method == 'Transferencia' %}
+                        <span class="badge bg-primary"><i class="bi bi-bank me-1"></i>Transferencia</span>
+                    {% else %}
+                        <span class="badge bg-secondary">{{ p.method }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if p.status == 'Pagado' %}
+                        <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Pagado</span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pendiente</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if p.status != 'Pagado' %}
+                    <form method="post" action="{% url 'payment_confirm' p.id %}" class="d-inline">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-success me-1" title="Confirmar pago">
+                            <i class="bi bi-check-lg"></i>
+                        </button>
+                    </form>
+                    {% endif %}
+                    <a href="{% url 'payment_edit' p.id %}" class="btn btn-sm btn-outline-success me-1">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <a href="{% url 'payment_delete' p.id %}" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

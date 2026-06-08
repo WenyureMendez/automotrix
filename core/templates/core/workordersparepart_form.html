@@ -1,0 +1,41 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card p-4">
+            <h4 class="fw-bold mb-4">Asignar Repuesto a Orden</h4>
+            <form method="post">
+                {% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">Orden de Trabajo *</label>
+                        <select name="workorder" class="form-select" required>
+                            <option value="">Seleccione una orden</option>
+                            {% for w in workorders %}
+                            <option value="{{ w.id }}">Orden #{{ w.id }} - {{ w.vehicle.brand }} {{ w.vehicle.plate }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Repuesto *</label>
+                        <select name="sparepart" class="form-select" required>
+                            <option value="">Seleccione un repuesto</option>
+                            {% for s in spareparts %}
+                            <option value="{{ s.id }}">{{ s.name }} - ${{ s.price }} (Stock: {{ s.stock }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Cantidad *</label>
+                        <input type="number" name="quantity" class="form-control" min="1" required>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-4">
+                    <a href="{% url 'workorderspareparts_list' %}" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-success"><i class="bi bi-floppy me-1"></i> Asignar Repuesto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

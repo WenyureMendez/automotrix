@@ -1,0 +1,63 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title mb-0">Gestión de Clientes</h1>
+    <a href="{% url 'customer_create' %}" class="btn btn-success"><i class="bi bi-plus-lg me-1"></i> Nuevo Cliente</a>
+</div>
+<div class="card mb-3 p-3">
+    <div class="input-group">
+        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+        <input type="text" id="buscador" class="form-control border-start-0 ps-0" placeholder="Buscar por nombre, cédula o email..." oninput="filtrarClientes()">
+    </div>
+</div>
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0" id="tablaClientes">
+            <thead class="table-light">
+                <tr><th>ID</th><th>Nombre</th><th>Cédula</th><th>Email</th><th>Teléfono</th><th>Acciones</th></tr>
+            </thead>
+            <tbody>
+            {% for c in customers %}
+            <tr class="fila-cliente" data-nombre="{{ c.first_name|lower }} {{ c.last_name|lower }}" data-cedula="{{ c.cedula|default:'' }}" data-email="{{ c.email|lower }}">
+                <td><span class="badge bg-light text-dark fw-normal">{{ c.id }}</span></td>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="avatar-circle">{{ c.first_name|first|upper }}</div>
+                        <div class="fw-semibold">{{ c.first_name }} {{ c.last_name }}</div>
+                    </div>
+                </td>
+                <td>{% if c.cedula %}<span class="badge bg-success-subtle text-success fw-semibold">{{ c.cedula }}</span>{% else %}<span class="text-muted small">Sin cédula</span>{% endif %}</td>
+                <td><span class="text-muted small">{{ c.email }}</span></td>
+                <td>{{ c.phone }}</td>
+                <td>
+                    <a href="{% url 'customer_edit' c.id %}" class="btn btn-sm btn-outline-success me-1"><i class="bi bi-pencil"></i></a>
+                    <a href="{% url 'customer_delete' c.id %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <div id="sinResultados" class="text-center py-5 text-muted" style="display:none;">
+            <i class="bi bi-search fs-1 d-block mb-2"></i>
+            No se encontraron clientes con ese criterio.
+        </div>
+    </div>
+</div>
+<style>
+.avatar-circle { width:34px; height:34px; border-radius:50%; background-color:#22c55e; color:white; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.85rem; flex-shrink:0; }
+.bg-success-subtle { background-color:#dcfce7; }
+</style>
+<script>
+function filtrarClientes() {
+    const q = document.getElementById('buscador').value.toLowerCase().trim();
+    const filas = document.querySelectorAll('.fila-cliente');
+    let visibles = 0;
+    filas.forEach(fila => {
+        const coincide = fila.dataset.nombre.includes(q) || fila.dataset.cedula.includes(q) || fila.dataset.email.includes(q);
+        fila.style.display = coincide ? '' : 'none';
+        if (coincide) visibles++;
+    });
+    document.getElementById('sinResultados').style.display = visibles === 0 ? 'block' : 'none';
+}
+</script>
+{% endblock %}

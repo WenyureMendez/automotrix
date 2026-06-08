@@ -1,0 +1,33 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="row justify-content-center" style="margin-top: 80px;">
+    <div class="col-md-5">
+        <div class="card border-0 shadow-lg p-5 text-center" style="border-radius:20px;">
+            
+            <!-- Ícono animado -->
+            <div class="mb-4">
+                <div style="width:80px; height:80px; background:linear-gradient(135deg,#fee2e2,#fecaca); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto;">
+                    <i class="bi bi-trash3-fill text-danger" style="font-size:2rem;"></i>
+                </div>
+            </div>
+
+            <h4 class="fw-bold mb-2">¿Eliminar este registro?</h4>
+            <p class="text-muted mb-1">Estás a punto de eliminar:</p>
+            <div class="alert alert-light border fw-semibold py-2 mb-4" style="border-radius:10px;">
+                <i class="bi bi-tag me-1 text-danger"></i>{{ nombre }}
+            </div>
+            <p class="text-muted small mb-4">Esta acción <strong>no se puede deshacer</strong>. El registro será eliminado permanentemente.</p>
+
+            <form method="post" class="d-flex gap-3 justify-content-center">
+                {% csrf_token %}
+                <a href="{% url back %}" class="btn btn-light px-5 fw-semibold" style="border-radius:10px;">
+                    <i class="bi bi-arrow-left me-1"></i>Cancelar
+                </a>
+                <button type="submit" class="btn btn-danger px-5 fw-semibold" style="border-radius:10px;">
+                    <i class="bi bi-trash3 me-1"></i>Sí, eliminar
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card p-4">
+            <h4 class="fw-bold mb-4">{{ action }} Pago</h4>
+            <form method="post">
+                {% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">Factura *</label>
+                        <select name="invoice" class="form-select" required>
+                            <option value="">Seleccione una factura</option>
+                            {% for inv in invoices %}
+                            <option value="{{ inv.id }}" {% if obj.invoice_id == inv.id %}selected{% endif %}>
+                                Factura #{{ inv.id }} - {{ inv.date }} - ${{ inv.total }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Monto *</label>
+                        <input type="number" step="0.01" name="amount" class="form-control" value="{{ obj.amount|default:'' }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Fecha de Pago *</label>
+                        <input type="date" name="payment_date" class="form-control" value="{{ obj.payment_date|date:'Y-m-d'|default:'' }}" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Método de Pago *</label>
+                        <select name="method" class="form-select" required>
+                            <option value="Efectivo" {% if obj.method == 'Efectivo' %}selected{% endif %}>Efectivo</option>
+                            <option value="Tarjeta" {% if obj.method == 'Tarjeta' %}selected{% endif %}>Tarjeta</option>
+                            <option value="Transferencia" {% if obj.method == 'Transferencia' %}selected{% endif %}>Transferencia</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-4">
+                    <a href="{% url 'payments_list' %}" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-success"><i class="bi bi-floppy me-1"></i> Registrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

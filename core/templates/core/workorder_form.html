@@ -1,0 +1,66 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card p-4 mb-4">
+            <h4 class="fw-bold mb-4">{{ action }} Orden de Trabajo</h4>
+            <form method="post">
+                {% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Vehículo *</label>
+                        <select name="vehicle" class="form-select" required>
+                            <option value="">Seleccione un vehículo</option>
+                            {% for v in vehicles %}
+                            <option value="{{ v.id }}" {% if obj.vehicle_id == v.id %}selected{% endif %}>
+                                {{ v.brand }} {{ v.model }} - {{ v.plate }}
+                            </option>
+                            {% endfor %}
+                            {% if is_mecanico %}
+                    <div class="col-12">
+                        <label class="form-label fw-semibold"><i class="bi bi-chat-text me-1"></i>Notas del Mecánico</label>
+                        <textarea name="notas_mecanico" class="form-control" rows="4"
+                                  placeholder="Describe trabajos adicionales realizados, observaciones o recomendaciones...">{{ obj.notas_mecanico|default:'' }}</textarea>
+                        <div class="form-text">Estos comentarios aparecerán en la factura final.</div>
+                    </div>
+                    {% endif %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Mecánico *</label>
+                        <select name="mechanic" class="form-select" required>
+                            <option value="">Seleccione un mecánico</option>
+                            {% for m in mechanics %}
+                            <option value="{{ m.id }}" {% if obj.mechanic_id == m.id %}selected{% endif %}>
+                                {{ m.first_name }} {{ m.last_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Fecha Inicio *</label>
+                        <input type="date" name="start_date" class="form-control" value="{{ obj.start_date|date:'Y-m-d'|default:'' }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Fecha Fin</label>
+                        <input type="date" name="end_date" class="form-control" value="{{ obj.end_date|date:'Y-m-d'|default:'' }}">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Estado *</label>
+                        <select name="status" class="form-select" required>
+                            <option value="Activa" {% if obj.status == 'Activa' %}selected{% endif %}>Activa</option>
+                            <option value="Diagnóstico" {% if obj.status == 'Diagnóstico' %}selected{% endif %}>Diagnóstico</option>
+                            <option value="Reparación" {% if obj.status == 'Reparación' %}selected{% endif %}>Reparación</option>
+                            <option value="Finalizada" {% if obj.status == 'Finalizada' %}selected{% endif %}>Finalizada</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-4">
+                    <a href="{% url 'workorders_list' %}" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-success"><i class="bi bi-floppy me-1"></i> Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
