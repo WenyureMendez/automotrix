@@ -78,11 +78,11 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'automotrix',
-        'USER': 'root',
-        'PASSWORD': '123456',
-        'HOST': '127.0.0.1',
-        'PORT': '3307',
+        'NAME': os.getenv('MYSQLDATABASE', 'automotrix'),
+        'USER': os.getenv('MYSQLUSER', 'root'),
+        'PASSWORD': os.getenv('MYSQLPASSWORD', '123456'),
+        'HOST': os.getenv('MYSQLHOST', '127.0.0.1'),
+        'PORT': os.getenv('MYSQLPORT', '3307'),
     }
 }
 
